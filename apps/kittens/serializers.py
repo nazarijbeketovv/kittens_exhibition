@@ -70,5 +70,9 @@ class BreedSerializer(serializers.ModelSerializer):
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = ["kitten", "user", "score"]
+        fields = ["kitten", "score"]
         read_only_fields = ["user"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        return Rating.objects.create(user=user, **validated_data)

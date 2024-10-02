@@ -1,5 +1,7 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
 
 from .filters import KittenFilter
 from .models import Kitten, Breed, Rating
@@ -36,15 +38,19 @@ class KittenViewSet(viewsets.ModelViewSet):
             return KittenListSerializer
         return KittenSerializer
 
+    @action(detail=False, methods=["get"], url_path="breeds", url_name="breeds")
+    def list_breeds(self, request):
+        queryset = Breed.objects.all()
+        serializer = BreedSerializer(queryset, many=True)
+        return Response(serializer.data)
 
-class BreedViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Breed.objects.all()
-    serializer_class = BreedSerializer
-
-
-class RatingViewSet(viewsets.ModelViewSet):
-    queryset = Rating.objects.select_related("kitten", "user")
-    serializer_class = RatingSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    # TODO: to finish the func below
+    @action(detail=True, methods=["post"], url_path="rate", url_name="rate")
+    def set_rating(self, request, pk=None):
+        kitten = self.get_object()
+        serializer = RatingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(kitten=kitten, user=self.request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

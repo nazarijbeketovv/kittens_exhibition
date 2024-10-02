@@ -28,7 +28,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "drf_yasg",
-    "apps.kittens",
+    "apps.kittens.apps.KittensConfig",
     "django_filters",
 ]
 
