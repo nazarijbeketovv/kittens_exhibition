@@ -24,7 +24,9 @@ class Kitten(models.Model):
     age = models.PositiveIntegerField()
     description = models.TextField()
     added_by = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, related_name="kittens"
+        get_user_model(),
+        on_delete=models.CASCADE,
+        related_name="kittens",
     )
 
     def __str__(self):
