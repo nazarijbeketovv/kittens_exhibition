@@ -27,7 +27,7 @@
 ## Запуск тестов
 
 ```bash
-pytest -v
+docker-compose exec web-app pytest -v
 ```
 
 ## Документация
