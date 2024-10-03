@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -36,6 +37,8 @@ class KittenViewSet(viewsets.ModelViewSet):
             return KittenDetailSerializer
         elif self.action == "list":
             return KittenListSerializer
+        elif self.action == "rate_kitten":
+            return RatingSerializer
         return KittenSerializer
 
     @action(detail=False, methods=["get"], url_path="breeds", url_name="breeds")
@@ -44,13 +47,34 @@ class KittenViewSet(viewsets.ModelViewSet):
         serializer = BreedSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    # TODO: to finish the func below
-    @action(detail=True, methods=["post"], url_path="rate", url_name="rate")
-    def set_rating(self, request, pk=None):
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="rate",
+        url_name="rate",
+        permission_classes=[IsAuthenticated],
+    )
+    def rate_kitten(self, request, pk=None):
         kitten = self.get_object()
-        serializer = RatingSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(kitten=kitten, user=self.request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
+        user = request.user
+
+        try:
+            rating = Rating.objects.get(kitten=kitten, user=user)
+            if rating.score == request.data.get("score"):
+                return Response(
+                    {
+                        "detail": "You have already rated this kitten with the same score."
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            serializer = RatingSerializer(rating, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save(user=user, kitten=kitten)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Rating.DoesNotExist:
+            serializer = RatingSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(user=user, kitten=kitten)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
